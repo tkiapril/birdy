@@ -20,7 +20,7 @@ class BirdyException(Exception):
         request_method=None,
         status_code=None,
         error_code=None,
-        headers=None
+        headers=None,
     ):
         self._msg = msg
         self.request_method = request_method
@@ -34,7 +34,7 @@ class BirdyException(Exception):
             return '{} ({} {})'.format(
                 self._msg,
                 self.request_method,
-                self.resource_url
+                self.resource_url,
             )
         return self._msg
 
@@ -49,14 +49,18 @@ class TwitterApiError(BirdyException):
         msg,
         response=None,
         request_method=None,
-        error_code=None
+        error_code=None,
     ):
         kwargs = {'request_method': request_method}
 
         if response is not None:
-            kwargs.update({'status_code': response.status_code,
-                           'resource_url': response.url,
-                           'headers': response.headers})
+            kwargs.update(
+                {
+                    'status_code': response.status_code,
+                    'resource_url': response.url,
+                    'headers': response.headers,
+                }
+            )
 
         super(TwitterApiError, self).__init__(msg, **kwargs)
 
@@ -108,7 +112,7 @@ class BaseResponse(object):
         return '<{}: {} {}>'.format(
             self.__class__.__name__,
             self.request_method,
-            self.resource_url
+            self.resource_url,
         )
 
 
@@ -134,7 +138,7 @@ class StreamResponse(BaseResponse):
                 try:
                     data = json.loads(
                         item,
-                        object_hook=self._json_object_hook
+                        object_hook=self._json_object_hook,
                     )
                 except:
                     pass
@@ -149,7 +153,7 @@ class JSONObject(dict):
         raise AttributeError(
             '{} has no property named {}.'.format(
                 self.__class__.__name__,
-                name
+                name,
             )
         )
 
@@ -202,7 +206,7 @@ class BaseTwitterClient(object):
         return '{}/{}/{}.json'.format(
             self.base_api_url.format(paths[0]),
             self.api_version,
-            '/'.join(paths[1:])
+            '/'.join(paths[1:]),
         )
 
     def make_api_call(self, method, url, **request_kwargs):
@@ -221,7 +225,7 @@ class BaseTwitterClient(object):
             raise TwitterApiError(
                 'Unable to decode JSON response.',
                 response,
-                method
+                method,
             )
 
         error_code, error_msg = self.get_twitter_error_details(data)
@@ -237,7 +241,7 @@ class BaseTwitterClient(object):
                 'Invalid API resource.',
                 response,
                 method,
-                error_code
+                error_code,
             )
 
         elif response.status_code == 429:
@@ -245,7 +249,7 @@ class BaseTwitterClient(object):
                 error_msg,
                 response,
                 method,
-                error_code
+                error_code,
             )
 
         raise TwitterApiError(error_msg, response, method, error_code)
@@ -296,7 +300,7 @@ class UserClient(BaseTwitterClient):
         consumer_key,
         consumer_secret,
         access_token=None,
-        access_token_secret=None
+        access_token_secret=None,
     ):
         self.request_token_url = (
             '{}/oauth/request_token'.format(
@@ -332,7 +336,7 @@ class UserClient(BaseTwitterClient):
                 client_key=self.consumer_key,
                 client_secret=self.consumer_secret,
                 resource_owner_key=self.access_token,
-                resource_owner_secret=self.access_token_secret
+                resource_owner_secret=self.access_token_secret,
             )
         )
 
@@ -430,7 +434,7 @@ class AppClient(BaseTwitterClient):
         consumer_key,
         consumer_secret,
         access_token=None,
-        token_type='bearer'
+        token_type='bearer',
     ):
         self.request_token_url = '{}/oauth2/token'.format(
             self.base_api_url.format('api')
@@ -456,13 +460,13 @@ class AppClient(BaseTwitterClient):
         if self.access_token:
             token = {
                 'access_token': self.access_token,
-                'token_type': self.token_type
+                'token_type': self.token_type,
             }
 
         return self.configure_oauth_session(
             OAuth2Session(
                 client=client,
-                token=token
+                token=token,
             )
         )
 
@@ -473,7 +477,7 @@ class AppClient(BaseTwitterClient):
             response = self.session.post(
                 self.request_token_url,
                 auth=self.auth,
-                data=data
+                data=data,
             )
             data = json.loads(response.content.decode('utf-8'))
             access_token = data['access_token']
@@ -497,7 +501,7 @@ class AppClient(BaseTwitterClient):
             response = self.session.post(
                 self.invalidate_token_url,
                 auth=self.auth,
-                data=data
+                data=data,
             )
         except requests.RequestException as e:
             raise TwitterClientError(str(e))
@@ -517,7 +521,7 @@ class StreamClient(BaseTwitterClient):
         consumer_key,
         consumer_secret,
         access_token,
-        access_token_secret
+        access_token_secret,
     ):
         self.consumer_key = consumer_key
         self.consumer_secret = consumer_secret
@@ -532,7 +536,7 @@ class StreamClient(BaseTwitterClient):
                 client_key=self.consumer_key,
                 client_secret=self.consumer_secret,
                 resource_owner_key=self.access_token,
-                resource_owner_secret=self.access_token_secret
+                resource_owner_secret=self.access_token_secret,
             )
         )
 
@@ -548,7 +552,7 @@ class StreamClient(BaseTwitterClient):
                 'Unauthorized.',
                 response,
                 method,
-                response.status_code
+                response.status_code,
             )
 
         elif response.status_code == 404:
@@ -556,7 +560,7 @@ class StreamClient(BaseTwitterClient):
                 'Invalid API resource.',
                 response,
                 method,
-                response.status_code
+                response.status_code,
             )
 
         elif response.status_code == 420:
@@ -564,12 +568,12 @@ class StreamClient(BaseTwitterClient):
                 response.content,
                 response,
                 method,
-                response.status_code
+                response.status_code,
             )
 
         raise TwitterApiError(
             response.content,
             response,
             method,
-            response.status_code
+            response.status_code,
         )
