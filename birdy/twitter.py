@@ -9,7 +9,7 @@ import json
 import collections
 
 TWITTER_API_VERSION = '1.1'
-TWITTER_BASE_API_URL = 'https://%s.twitter.com'
+TWITTER_BASE_API_URL = 'https://{}.twitter.com'
 
 
 class BirdyException(Exception):
@@ -31,7 +31,7 @@ class BirdyException(Exception):
 
     def __str__(self):
         if self.request_method and self.resource_url:
-            return '%s (%s %s)' % (
+            return '{} ({} {})'.format(
                 self._msg,
                 self.request_method,
                 self.resource_url
@@ -75,11 +75,11 @@ class ApiComponent(object):
         self._path = path
 
     def __repr__(self):
-        return '<ApiComponent: %s>' % self._path
+        return '<ApiComponent: {}>'.format(self._path)
 
     def __getitem__(self, path):
         if self._path is not None:
-            path = '%s/%s' % (self._path, path)
+            path = '{}/{}'.format(self._path, path)
         return ApiComponent(self._client, path)
 
     def __getattr__(self, path):
@@ -105,7 +105,7 @@ class ApiComponent(object):
 
 class BaseResponse(object):
     def __repr__(self):
-        return '<%s: %s %s>' % (
+        return '<{}: {} {}>'.format(
             self.__class__.__name__,
             self.request_method,
             self.resource_url
@@ -132,7 +132,10 @@ class StreamResponse(BaseResponse):
         for item in self._stream_iter():
             if item:
                 try:
-                    data = json.loads(item, object_hook=self._json_object_hook)
+                    data = json.loads(
+                        item,
+                        object_hook=self._json_object_hook
+                    )
                 except:
                     pass
                 else:
@@ -144,23 +147,26 @@ class JSONObject(dict):
         if name in iter(self.keys()):
             return self[name]
         raise AttributeError(
-            '%s has no property named %s.' % (self.__class__.__name__, name)
+            '{} has no property named {}.'.format(
+                self.__class__.__name__,
+                name
+            )
         )
 
     def __setattr__(self, *args):
         raise AttributeError(
-            '%s instances are read-only.' % self.__class__.__name__
+            '{} instances are read-only.'.format(self.__class__.__name__)
         )
     __delattr__ = __setitem__ = __delitem__ = __setattr__
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, dict.__repr__(self))
+        return '<{}: {}>'.format(self.__class__.__name__, dict.__repr__(self))
 
 
 class BaseTwitterClient(object):
     api_version = TWITTER_API_VERSION
     base_api_url = TWITTER_BASE_API_URL
-    user_agent_string = 'Birdy Twitter Client v%s' % __version__
+    user_agent_string = 'Birdy Twitter Client v{}'.format(__version__)
 
     def __getattr__(self, path):
         return ApiComponent(self, path)
@@ -193,8 +199,8 @@ class BaseTwitterClient(object):
 
     def construct_resource_url(self, path):
         paths = path.split('/')
-        return '%s/%s/%s.json' % (
-            self.base_api_url % paths[0],
+        return '{}/{}/{}.json'.format(
+            self.base_api_url.format(paths[0]),
             self.api_version,
             '/'.join(paths[1:])
         )
@@ -293,24 +299,24 @@ class UserClient(BaseTwitterClient):
         access_token_secret=None
     ):
         self.request_token_url = (
-            '%s/oauth/request_token' %
-            self.base_api_url %
-            'api'
+            '{}/oauth/request_token'.format(
+                self.base_api_url.format('api')
+            )
         )
         self.access_token_url = (
-            '%s/oauth/access_token' %
-            self.base_api_url %
-            'api'
+            '{}/oauth/access_token'.format(
+                self.base_api_url.format('api')
+            )
         )
         self.base_signin_url = (
-            '%s/oauth/authenticate' %
-            self.base_api_url %
-            'api'
+            '{}/oauth/authenticate'.format(
+                self.base_api_url.format('api')
+            )
         )
         self.base_authorize_url = (
-            '%s/oauth/authorize' %
-            self.base_api_url %
-            'api'
+            '{}/oauth/authorize'.format(
+                self.base_api_url.format('api')
+            )
         )
 
         self.consumer_key = consumer_key
@@ -390,9 +396,11 @@ class UserClient(BaseTwitterClient):
 
         if not all(required):
             raise TwitterClientError(
-                '%s must be initialized with access_token and '
-                'access_token_secret to fetch authorized access token.' %
-                self.__class__.__name__
+                '{} must be initialized with access_token and '
+                'access_token_secret to fetch authorized '
+                'access token.'.format(
+                    self.__class__.__name__
+                )
             )
 
         self.session._client.client.verifier = \
@@ -424,11 +432,13 @@ class AppClient(BaseTwitterClient):
         access_token=None,
         token_type='bearer'
     ):
-        self.request_token_url = '%s/oauth2/token' % self.base_api_url % 'api'
+        self.request_token_url = '{}/oauth2/token'.format(
+            self.base_api_url.format('api')
+        )
         self.invalidate_token_url = (
-            '%s/oauth2/invalidate_token' %
-            self.base_api_url %
-            'api'
+            '{}/oauth2/invalidate_token'.format(
+                self.base_api_url.format('api')
+            )
         )
 
         self.consumer_key = consumer_key
