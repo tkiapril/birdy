@@ -8,8 +8,9 @@ import requests
 import json
 import collections
 
-TWITTER_API_VERSION = '1.1'
-TWITTER_BASE_API_URL = 'https://{}.twitter.com'
+DEFAULT_API_VERSION = '1.1'
+DEFAULT_API_ENDPOINT_FORMAT = 'https://{endpoint}.twitter.com'
+DEFAULT_USER_AGENT_STRING = 'Birdy Twitter Client v{}'.format(__version__)
 
 
 class BirdyException(Exception):
@@ -168,9 +169,15 @@ class JSONObject(dict):
 
 
 class BaseTwitterClient(object):
-    api_version = TWITTER_API_VERSION
-    base_api_url = TWITTER_BASE_API_URL
-    user_agent_string = 'Birdy Twitter Client v{}'.format(__version__)
+    def __init__(
+        self,
+        api_version=DEFAULT_API_VERSION,
+        api_endpoint_format=DEFAULT_API_ENDPOINT_FORMAT,
+        user_agent_string=DEFAULT_USER_AGENT_STRING,
+    ):
+        self.api_version = api_version
+        self.api_endpoint_format = api_endpoint_format
+        self.user_agent_string = user_agent_string
 
     def __getattr__(self, path):
         return ApiComponent(self, path)
@@ -204,7 +211,7 @@ class BaseTwitterClient(object):
     def construct_resource_url(self, path):
         paths = path.split('/')
         return '{}/{}/{}.json'.format(
-            self.base_api_url.format(paths[0]),
+            self.api_endpoint_format.format(endpoint=paths[0]),
             self.api_version,
             '/'.join(paths[1:]),
         )
@@ -301,25 +308,31 @@ class UserClient(BaseTwitterClient):
         consumer_secret,
         access_token=None,
         access_token_secret=None,
+        api_version=DEFAULT_API_VERSION,
+        api_endpoint_format=DEFAULT_API_ENDPOINT_FORMAT,
+        user_agent_string=DEFAULT_USER_AGENT_STRING,
     ):
+        super().__init__(
+            api_version, api_endpoint_format, user_agent_string
+        )
         self.request_token_url = (
             '{}/oauth/request_token'.format(
-                self.base_api_url.format('api')
+                self.api_endpoint_format.format(endpoint='api')
             )
         )
         self.access_token_url = (
             '{}/oauth/access_token'.format(
-                self.base_api_url.format('api')
+                self.api_endpoint_format.format(endpoint='api')
             )
         )
         self.base_signin_url = (
             '{}/oauth/authenticate'.format(
-                self.base_api_url.format('api')
+                self.api_endpoint_format.format(endpoint='api')
             )
         )
         self.base_authorize_url = (
             '{}/oauth/authorize'.format(
-                self.base_api_url.format('api')
+                self.api_endpoint_format.format(endpoint='api')
             )
         )
 
@@ -435,13 +448,19 @@ class AppClient(BaseTwitterClient):
         consumer_secret,
         access_token=None,
         token_type='bearer',
+        api_version=DEFAULT_API_VERSION,
+        api_endpoint_format=DEFAULT_API_ENDPOINT_FORMAT,
+        user_agent_string=DEFAULT_USER_AGENT_STRING,
     ):
+        super().__init__(
+            api_version, api_endpoint_format, user_agent_string
+        )
         self.request_token_url = '{}/oauth2/token'.format(
-            self.base_api_url.format('api')
+            self.api_endpoint_format.format(endpoint='api')
         )
         self.invalidate_token_url = (
             '{}/oauth2/invalidate_token'.format(
-                self.base_api_url.format('api')
+                self.api_endpoint_format.format(endpoint='api')
             )
         )
 
@@ -522,7 +541,13 @@ class StreamClient(BaseTwitterClient):
         consumer_secret,
         access_token,
         access_token_secret,
+        api_version=DEFAULT_API_VERSION,
+        api_endpoint_format=DEFAULT_API_ENDPOINT_FORMAT,
+        user_agent_string=DEFAULT_USER_AGENT_STRING,
     ):
+        super().__init__(
+            api_version, api_endpoint_format, user_agent_string
+        )
         self.consumer_key = consumer_key
         self.consumer_secret = consumer_secret
         self.access_token = access_token
