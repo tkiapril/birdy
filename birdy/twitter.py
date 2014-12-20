@@ -6,6 +6,7 @@ from . import __version__
 
 import requests
 import json
+import collections
 
 TWITTER_API_VERSION = '1.1'
 TWITTER_BASE_API_URL = 'https://%s.twitter.com'
@@ -114,7 +115,7 @@ class StreamResponse(BaseResponse):
 
 class JSONObject(dict):
     def __getattr__(self, name):
-        if name in self.iterkeys():
+        if name in iter(self.keys()):
             return self[name]
         raise AttributeError('%s has no property named %s.' % (self.__class__.__name__, name))
     
@@ -197,7 +198,7 @@ class BaseTwitterClient(object):
         params, files = ({}, {})
         
         for k, v in input_params.items():
-            if hasattr(v, 'read') and callable(v.read):
+            if hasattr(v, 'read') and isinstance(v.read, collections.Callable):
                 files[k] = v
             elif isinstance(v, bool):
                 if v:
